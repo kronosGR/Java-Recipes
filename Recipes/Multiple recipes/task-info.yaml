@@ -193,6 +193,53 @@ files:
         }
     }
   learner_created: false
+- name: src/recipes/Models/Recipe.java
+  visible: true
+  text: |
+    package recipes.Models;
+
+    import lombok.AllArgsConstructor;
+    import lombok.Data;
+    import lombok.NoArgsConstructor;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public class Recipe {
+        String name;
+        String description;
+        String ingredients;
+        String directions;
+    }
+  learner_created: true
+- name: src/recipes/endpoints/Api.java
+  visible: true
+  text: |
+    package recipes.endpoints;
+
+    import org.springframework.web.bind.annotation.*;
+    import recipes.Models.Recipe;
+
+    @RestController
+    @RequestMapping(path="/api")
+    public class Api {
+
+        Recipe tmpRecipe;
+
+        @GetMapping("/recipe")
+        public Recipe getRecipe(){
+            return tmpRecipe;
+        }
+
+        @PostMapping(value = "/recipe", consumes = "application/json")
+        public void addRecipe(@RequestBody Recipe newRecipe){
+            tmpRecipe = newRecipe;
+        }
+    }
+  learner_created: true
 feedback_link: https://hyperskill.org/projects/180/stages/918/implement#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Mon, 06 Feb 2023 10:04:13 UTC"
 record: -1
