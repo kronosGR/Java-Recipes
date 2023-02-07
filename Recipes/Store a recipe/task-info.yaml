@@ -308,6 +308,84 @@ files:
         }
     }
   learner_created: false
-feedback_link: https://hyperskill.org/projects/180/stages/919/implement#comment
-status: Unchecked
+- name: src/recipes/Models/Recipe.java
+  visible: true
+  text: |
+    package recipes.Models;
+
+    import com.fasterxml.jackson.annotation.JsonIgnore;
+    import lombok.AllArgsConstructor;
+    import lombok.Data;
+    import lombok.NoArgsConstructor;
+
+    import java.util.List;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public class Recipe {
+
+        static long ID = 1L;
+        @JsonIgnore
+        long id = ID++;
+        String name;
+        String description;
+
+        List<String> ingredients;
+        List<String> directions;
+    }
+  learner_created: true
+- name: src/recipes/endpoints/Api.java
+  visible: true
+  text: |
+    package recipes.endpoints;
+
+    import org.springframework.http.ResponseEntity;
+    import org.springframework.web.bind.annotation.*;
+    import recipes.Models.Recipe;
+
+    import java.util.HashMap;
+    import java.util.Map;
+
+    @RestController
+    @RequestMapping(path="/api")
+    public class Api {
+
+        Map<Long, Recipe> rcps = new HashMap<>();
+        @GetMapping("/recipe/{id}")
+        public ResponseEntity<?> getRecipe( @PathVariable Long id){
+            return rcps.containsKey(id) ? ResponseEntity.ok(rcps.get(id)) : ResponseEntity.notFound().build();
+        }
+
+        @PostMapping(value = "/recipe/new", consumes = "application/json")
+        public ResponseEntity<?> addRecipe(@RequestBody Recipe newRecipe){
+            rcps.put(newRecipe.getId(), newRecipe);
+            return ResponseEntity.ok(Map.of("id", newRecipe.getId()));
+
+        }
+    }
+  learner_created: true
+- name: src/recipes/Models/Ingredient.java
+  visible: true
+  learner_created: true
+- name: src/recipes/Models/Direction.java
+  visible: true
+  learner_created: true
+- name: src/recipes/Exceptions/RecipeNotFoundException.java
+  visible: true
+  learner_created: true
+- name: src/recipes/Services/RecipeRepository.java
+  visible: true
+  learner_created: true
+- name: src/recipes/Services/RecipeService.java
+  visible: true
+  learner_created: true
+- name: src/recipes/Models/RecipeJson.java
+  visible: true
+  learner_created: true
+feedback_link: https://hyperskill.org/learn/step/13090#comment
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Tue, 07 Feb 2023 18:11:33 UTC"
 record: -1
