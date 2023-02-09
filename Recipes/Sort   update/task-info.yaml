@@ -635,6 +635,238 @@ files:
         }
     }
   learner_created: false
+- name: src/recipes/Models/Recipe.java
+  visible: true
+  text: |
+    package recipes.Models;
+
+    import com.fasterxml.jackson.annotation.JsonIgnore;
+    import lombok.AllArgsConstructor;
+    import lombok.Data;
+    import lombok.NoArgsConstructor;
+
+    import javax.persistence.*;
+    import javax.validation.constraints.NotBlank;
+    import javax.validation.constraints.NotEmpty;
+    import java.util.List;
+
+    @Entity
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Data
+    @Table(name="recipes")
+    public class Recipe {
+
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        @JsonIgnore
+        long id;
+
+        @NotBlank
+        String name;
+        @NotBlank
+        String description;
+
+
+        @NotEmpty
+        @OneToMany(cascade = CascadeType.ALL, targetEntity = Ingredient.class)
+        @OrderBy("idx")
+        List<Ingredient> ingredients;
+
+        @NotEmpty
+        @OneToMany(cascade = CascadeType.ALL, targetEntity = Direction.class)
+        @OrderBy("idx")
+        List<Direction> directions;
+    }
+  learner_created: true
+- name: src/recipes/endpoints/Api.java
+  visible: true
+  text: |
+    package recipes.endpoints;
+
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.http.HttpStatus;
+    import org.springframework.http.ResponseEntity;
+    import org.springframework.validation.annotation.Validated;
+    import org.springframework.web.bind.annotation.*;
+    import recipes.Models.Recipe;
+    import recipes.Models.RecipeJson;
+    import recipes.Services.RecipeService;
+
+    import javax.validation.Valid;
+    import java.util.Map;
+
+    import static org.springframework.util.MimeTypeUtils.APPLICATION_JSON_VALUE;
+
+    @RestController
+    @RequestMapping(path = "/api")
+    @Validated
+    public class Api {
+
+        @Autowired
+        RecipeService recipeService;
+
+        @GetMapping("/recipe/{id}")
+        public RecipeJson getRecipe(@PathVariable Long id) {
+            return recipeService.getById(id);
+        }
+
+        @PostMapping(value = "/recipe/new", consumes = APPLICATION_JSON_VALUE)
+        public ResponseEntity<?> addRecipe(@Valid @RequestBody RecipeJson newRecipe) {
+            return ResponseEntity.ok(Map.of("id", recipeService.add(newRecipe)));
+        }
+
+        @DeleteMapping("/recipe/{id}")
+        @ResponseStatus(HttpStatus.NO_CONTENT)
+        public void deleteRecipe(@PathVariable long id) {
+            recipeService.deleteById(id);
+        }
+    }
+  learner_created: true
+- name: src/recipes/Services/RecipeRepository.java
+  visible: true
+  text: |
+    package recipes.Services;
+
+    import org.springframework.data.jpa.repository.JpaRepository;
+    import recipes.Models.Recipe;
+
+    public interface RecipeRepository  extends JpaRepository<Recipe, Long> {
+    }
+  learner_created: true
+- name: src/recipes/Exceptions/RecipeNotFoundException.java
+  visible: true
+  text: |
+    package recipes.Exceptions;
+
+    import org.springframework.http.HttpStatus;
+    import org.springframework.web.bind.annotation.ResponseStatus;
+
+    @ResponseStatus(value = HttpStatus.NOT_FOUND, reason = "Recipe does not exist")
+    public class RecipeNotFoundException extends RuntimeException {
+    }
+  learner_created: true
+- name: src/recipes/Services/RecipeService.java
+  visible: true
+  text: |
+    package recipes.Services;
+
+    import org.springframework.beans.factory.annotation.Autowired;
+    import org.springframework.stereotype.Service;
+    import recipes.Exceptions.RecipeNotFoundException;
+    import recipes.Models.Direction;
+    import recipes.Models.Ingredient;
+    import recipes.Models.Recipe;
+    import recipes.Models.RecipeJson;
+
+    import java.util.ArrayList;
+    import java.util.List;
+    import java.util.Objects;
+    import java.util.stream.Collectors;
+
+    @Service
+    public class RecipeService {
+
+        @Autowired
+        RecipeRepository recipeRepository;
+
+        public Long add(RecipeJson recipe){
+            Recipe tmp= recipeRepository.save(convertFromJson(recipe));
+            return tmp.getId();
+        }
+
+        public RecipeJson getById(Long id){
+            return convertToJson(recipeRepository.findById(id).orElseThrow(RecipeNotFoundException::new));
+        }
+
+        public void deleteById(long id){
+            if (!recipeRepository.existsById(id)){
+                throw new RecipeNotFoundException();
+            }
+            recipeRepository.deleteById(id);
+        }
+        private Recipe convertFromJson(RecipeJson recipeJson){
+            List<Ingredient> ings = new ArrayList<>();
+            List<Direction> dirs = new ArrayList<>();
+
+            Recipe recipe = new Recipe();
+            recipe.setName(recipeJson.getName());
+            recipe.setDescription(recipeJson.getDescription());
+
+            for (int i = 0; i < recipeJson.getIngredients().size(); i++) {
+                Ingredient ingredient = new Ingredient();
+                ingredient.setName(recipeJson.getIngredients().get(i));
+                ingredient.setIdx(i + 1);
+                ings.add(ingredient);
+            }
+
+            for (int i = 0; i < recipeJson.getDirections().size(); i++) {
+                Direction direction = new Direction();
+                direction.setDirection(recipeJson.getDirections().get(i));
+                direction.setIdx(i + 1);
+                dirs.add(direction);
+            }
+
+            recipe.setIngredients(ings);
+            recipe.setDirections(dirs);
+
+            return recipe;
+        }
+
+        private RecipeJson convertToJson(Recipe recipe){
+            RecipeJson recipeJson = new RecipeJson();
+            recipeJson.setName(recipe.getName());
+            recipeJson.setDescription(recipe.getDescription());
+
+            List<String> ings = new ArrayList<>();
+            recipe.getIngredients().forEach(ingredient -> {
+                ings.add(ingredient.getName());
+            });
+            List<String> dirs = new ArrayList<>();
+            recipe.getDirections().forEach(direction -> {
+                dirs.add(direction.getDirection());
+            });
+
+            recipeJson.setIngredients(ings);
+            recipeJson.setDirections(dirs);
+            return recipeJson;
+        }
+
+    }
+  learner_created: true
+- name: src/recipes/Models/RecipeJson.java
+  visible: true
+  text: |
+    package recipes.Models;
+
+    import lombok.Data;
+
+    import javax.validation.constraints.NotBlank;
+    import javax.validation.constraints.NotEmpty;
+    import java.util.List;
+
+    @Data
+    public class RecipeJson {
+
+        @NotBlank
+        String name;
+
+        @NotBlank
+        String description;
+
+        @NotEmpty
+        List<String> ingredients;
+
+        @NotEmpty
+        List<String> directions;
+    }
+  learner_created: true
+- name: src/recipes/Exceptions/NoContentException.java
+  visible: true
+  learner_created: true
 feedback_link: https://hyperskill.org/learn/step/13091#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: "Thu, 09 Feb 2023 09:20:17 UTC"
 record: -1

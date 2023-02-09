@@ -2,15 +2,17 @@ package recipes.Services;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import recipes.Exceptions.NoContentException;
 import recipes.Exceptions.RecipeNotFoundException;
-import recipes.Models.Direction;
-import recipes.Models.Ingredient;
 import recipes.Models.Recipe;
 import recipes.Models.RecipeJson;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,66 +21,72 @@ public class RecipeService {
     @Autowired
     RecipeRepository recipeRepository;
 
-    public Long add(RecipeJson recipe){
-        Recipe tmp= recipeRepository.save(convertFromJson(recipe));
+    public Long add(RecipeJson recipe) {
+        Recipe tmp = recipeRepository.save(convertFromJson(recipe));
         return tmp.getId();
     }
 
-    public RecipeJson getById(Long id){
+    public RecipeJson getById(Long id) {
         return convertToJson(recipeRepository.findById(id).orElseThrow(RecipeNotFoundException::new));
     }
 
-    public void deleteById(long id){
-        if (!recipeRepository.existsById(id)){
+    public void deleteById(long id) {
+        if (!recipeRepository.existsById(id)) {
             throw new RecipeNotFoundException();
         }
         recipeRepository.deleteById(id);
     }
-    private Recipe convertFromJson(RecipeJson recipeJson){
-        List<Ingredient> ings = new ArrayList<>();
-        List<Direction> dirs = new ArrayList<>();
 
+
+
+    public void update(long id, RecipeJson newRecipe) {
+
+          Recipe original= convertFromJson(getById(id));
+            original.setId(id);
+            original.setName(newRecipe.getName());
+            original.setDescription(newRecipe.getDescription());
+            original.setCategory(newRecipe.getCategory());
+            original.setIngredients(newRecipe.getIngredients());
+            original.setDirections(newRecipe.getDirections());
+            recipeRepository.saveAndFlush(original);
+    }
+
+    public List<RecipeJson> search(String n, String c) {
+        List<Recipe> tmp;
+        if (n == null) {
+            tmp = recipeRepository.findAllByCategoryIgnoreCaseOrderByDateDesc(c);
+            return tmp.stream().map(item -> convertToJson(item)).toList();
+        } else if (c == null) {
+            tmp = recipeRepository.findAllByNameContainingIgnoreCaseOrderByDateDesc(n);
+            return tmp.stream().map(item -> convertToJson(item)).toList();
+        } else {
+            tmp = recipeRepository.findAllByNameContainingIgnoreCaseAndCategoryIgnoreCaseOrderByDateDesc(n, c);
+            return tmp.stream().map(item -> convertToJson(item)).toList();
+        }
+    }
+
+
+    private Recipe convertFromJson(RecipeJson recipeJson) {
         Recipe recipe = new Recipe();
         recipe.setName(recipeJson.getName());
         recipe.setDescription(recipeJson.getDescription());
-
-        for (int i = 0; i < recipeJson.getIngredients().size(); i++) {
-            Ingredient ingredient = new Ingredient();
-            ingredient.setName(recipeJson.getIngredients().get(i));
-            ingredient.setIdx(i + 1);
-            ings.add(ingredient);
-        }
-
-        for (int i = 0; i < recipeJson.getDirections().size(); i++) {
-            Direction direction = new Direction();
-            direction.setDirection(recipeJson.getDirections().get(i));
-            direction.setIdx(i + 1);
-            dirs.add(direction);
-        }
-
-        recipe.setIngredients(ings);
-        recipe.setDirections(dirs);
+        recipe.setCategory(recipeJson.getCategory());
+        recipe.setDate(LocalDateTime.parse(recipeJson.getDate().toString()));
+        recipe.setIngredients(recipeJson.getIngredients());
+        recipe.setDirections(recipeJson.getDirections());
 
         return recipe;
     }
 
-    private RecipeJson convertToJson(Recipe recipe){
+    private RecipeJson convertToJson(Recipe recipe) {
         RecipeJson recipeJson = new RecipeJson();
         recipeJson.setName(recipe.getName());
         recipeJson.setDescription(recipe.getDescription());
+        recipeJson.setCategory(recipe.getCategory());
+        recipeJson.setDate(recipe.getDate().toString());
 
-        List<String> ings = new ArrayList<>();
-        recipe.getIngredients().forEach(ingredient -> {
-            ings.add(ingredient.getName());
-        });
-        List<String> dirs = new ArrayList<>();
-        recipe.getDirections().forEach(direction -> {
-            dirs.add(direction.getDirection());
-        });
-
-        recipeJson.setIngredients(ings);
-        recipeJson.setDirections(dirs);
+        recipeJson.setIngredients(recipe.getIngredients());
+        recipeJson.setDirections(recipe.getDirections());
         return recipeJson;
     }
-
 }
