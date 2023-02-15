@@ -834,7 +834,7 @@ files:
 
     }
   learner_created: true
-- name: src/recipes/Models/RecipeJson.java
+- name: src/recipes/Models/RecipeRequest.java
   visible: true
   text: |
     package recipes.Models;
@@ -864,9 +864,12 @@ files:
 - name: src/recipes/Exceptions/NoContentException.java
   visible: true
   learner_created: true
+- name: src/recipes/Models/User.java
+  visible: true
+  learner_created: true
 feedback_link: https://hyperskill.org/learn/step/13091#comment
 status: Solved
 feedback:
   message: Congratulations!
   time: "Thu, 09 Feb 2023 09:20:17 UTC"
-record: -1
+record: 4

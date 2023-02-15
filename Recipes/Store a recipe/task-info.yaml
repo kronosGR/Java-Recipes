@@ -380,7 +380,7 @@ files:
 - name: src/recipes/Services/RecipeService.java
   visible: true
   learner_created: true
-- name: src/recipes/Models/RecipeJson.java
+- name: src/recipes/Models/RecipeRequest.java
   visible: true
   learner_created: true
 feedback_link: https://hyperskill.org/learn/step/13090#comment
